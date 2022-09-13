@@ -1,0 +1,50 @@
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "3.14.2"
+
+  name = "${local.name}-${var.vpc_name}"
+  cidr =  var.vpc_cidr_block
+  azs                 = var.vcp_availability_zones
+  private_subnets     = var.vpc_private_subnets
+  public_subnets      = var.vpc_public_subnets
+
+
+  create_database_subnet_group = true
+  create_database_subnet_route_table = true
+  database_subnets    = var.vpc_database_subnets
+  
+  #create_database_nat_gateway_route  = true
+  #create_database_internet_gateway_route =  true
+
+  # NAT Gateways for outbound Comminication
+  enable_nat_gateway = true
+  single_nat_gateway = true
+
+  #VPC DNS parameters
+  enable_dns_hostnames =true
+  enable_dns_support = true
+
+  public_subnet_tags ={
+   Type = "public-subnets"
+  }
+
+  private_subnet_tags = {
+    Type = "private-subnets"
+  }
+
+  database_subnet_tags = {
+    Type = "database-subnets"
+  }
+
+  tags = {
+    Owner = "User1"
+    Environment = "dev"
+  }
+
+  vpc_tags = {
+    Name = "vpc-dev"
+  }
+
+
+  
+}
