@@ -17,8 +17,8 @@ module "vpc" {
   #create_database_internet_gateway_route =  true
 
   # NAT Gateways for outbound Comminication
-  enable_nat_gateway = true
-  single_nat_gateway = true
+  enable_nat_gateway = var.vpc_enable_nat_gateway
+  single_nat_gateway = var.vpc_single_nat_gateway
 
   #VPC DNS parameters
   enable_dns_hostnames =true
@@ -36,14 +36,8 @@ module "vpc" {
     Type = "database-subnets"
   }
 
-  tags = {
-    Owner = "User1"
-    Environment = "dev"
-  }
-
-  vpc_tags = {
-    Name = "vpc-dev"
-  }
+  tags = local.common_tags
+  vpc_tags = local.common_tags
 
 
   
