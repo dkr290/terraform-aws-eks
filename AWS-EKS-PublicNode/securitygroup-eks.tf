@@ -1,0 +1,1 @@
+# Security Group for EKS cluster Node group - Placeholder 0 it creates defaults by EKS deployemnts default it
