@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: goapp
+  name: goapp
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: goapp
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: goapp
+    spec:
+      containers:
+      - image: danikr238/web-bookings1.0
+        name: web-bookings
+        resources: {}
+status: {}
