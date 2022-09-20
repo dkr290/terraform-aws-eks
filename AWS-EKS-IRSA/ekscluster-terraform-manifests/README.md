@@ -5,6 +5,11 @@ c. Private node group
 ## Install Kubectl
 aws eks --region <<region>> update-kubeconfig --name <<cluster_name>>
 
+
+# Verify Kubernetes Worker Nodes using kubectl
+kubectl get nodes
+kubectl get nodes -o wide
+
 kubectl get nodes
 kubectl get nodes -o wide
 kubectl get svc
@@ -26,3 +31,5 @@ cat /var/lib/kubelet/kubeconfig
 
 wget <EKS CLusteAPI endpoint> to verify especially for the private workers can go through nat gateway and connect
 
+# EKS OpenID Connect Well Known Configuration URL
+<EKS OpenID Connect provider URL>/.well-known/openid-configuration

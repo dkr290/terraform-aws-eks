@@ -11,7 +11,7 @@ terraform {
   }
 
 backend "s3" {
-  bucket = "terraform-infrastate"
+  bucket = "terraform-infrastate80"
   key = "dev/eks-cluster/terraform.tfstate"
   region = "eu-central-1"
   
