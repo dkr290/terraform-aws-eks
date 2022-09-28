@@ -8,6 +8,17 @@ terraform {
       version = "~> 4.19"
       #alias   = "aws-eu-central"
     }
+
+    helm = {
+      source = "hashicorp/helm"
+      version = "~> 2.7"
+    }
+ 
+}
+
+provider "helm" {
+  # Configuration options
+}
   }
 
 backend "s3" {
@@ -18,7 +29,7 @@ backend "s3" {
 }
 
 
-}
+
 
 provider "aws" {
   # Configuration options
