@@ -13,20 +13,23 @@ terraform {
       source = "hashicorp/helm"
       version = "~> 2.7"
     }
- 
-}
 
-provider "helm" {
-  # Configuration options
-}
+      
+    http = {
+      source = "hashicorp/http"
+      version = "~>3.1"
+    }
   }
-
+ 
 backend "s3" {
   bucket = "terraform-infrastate80"
   key = "dev/ebs-storage/terraform.tfstate"
   region = "eu-central-1"
   
 }
+
+  }
+
 
 
 
@@ -37,6 +40,11 @@ provider "aws" {
   profile = "default"
 
 
+}
+
+
+provider "http" {
+  # Configuration options
 }
 
 

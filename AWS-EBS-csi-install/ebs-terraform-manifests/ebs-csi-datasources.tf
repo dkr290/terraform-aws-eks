@@ -1,5 +1,5 @@
 data "http" "ebs_csi_iam_policy" {
-    url = "https://github.com/kubernetes-sigs/aws-ebs-csi-driver/blob/master/docs/example-iam-policy.json"
+    url = "https://raw.githubusercontent.com/kubernetes-sigs/aws-ebs-csi-driver/master/docs/example-iam-policy.json"
 
 
     request_headers = {
