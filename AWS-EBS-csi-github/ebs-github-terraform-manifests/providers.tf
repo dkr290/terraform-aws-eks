@@ -19,6 +19,12 @@ terraform {
       source = "hashicorp/http"
       version = "~>3.1"
     }
+
+    kubernetes = {
+      source = "hashicorp/kubernetes"
+      version = "2.13.1"
+      
+    }
   }
  
 backend "s3" {
@@ -49,3 +55,11 @@ provider "http" {
 
 
 
+provider "kubernetes" {
+  # Configuration options
+  host                   = data.terraform_remote_state.eks.outputs.cluster_endpoint
+  cluster_ca_certificate = base64decode( data.terraform_remote_state.eks.outputs.cluster_certificate_authority_data)
+  token = data.aws_eks_cluster_auth.cluster.token
+ 
+ 
+}
