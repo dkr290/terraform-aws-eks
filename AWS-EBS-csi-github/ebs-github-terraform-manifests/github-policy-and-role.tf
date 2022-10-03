@@ -14,7 +14,7 @@
 # Url is url of the id token provider. iss field of the token
 resource "aws_iam_openid_connect_provider" "github" {
   client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+  thumbprint_list = ["15E29108718111E59B3DAD31954647E3C344A231"]
   url             = "https://token.actions.githubusercontent.com"
 }
 
@@ -28,7 +28,7 @@ data "aws_iam_policy_document" "github_assume_role_policy" {
     condition {
       test     = "StringLike"
       variable = "${replace(aws_iam_openid_connect_provider.github.url, "https://", "")}:sub"
-      values   = ["repo:prashanth-volvocars/actions-to-eks:*"]
+      values   = ["repo:dkr290/mlflow-cicd:*"]
     }
 
     principals {

@@ -6,7 +6,7 @@ resource "kubernetes_cluster_role" "github_oidc_cluster_role" {
 
     rule {
         api_groups  = ["*"]
-        resources   = ["deployments","pods","services"]
+        resources   = ["deployments","pods","services","namespaces","secrets","configmaps"]
         verbs       = ["get", "list", "watch", "create", "update", "patch", "delete"]
     }
 }
@@ -31,31 +31,57 @@ resource "kubernetes_cluster_role_binding" "github_oidc_cluster_role_binding" {
 }
 
 
-resource "kubernetes_config_map" "aws-auth" {
-  data = {
-    "mapRoles" = yamlencode([
-      {
-        "groups": ["system:bootstrappers", "system:nodes"],
-        "rolearn": data.aws_iam_role.workers.arn
-        "username": "system:node:{{EC2PrivateDNSName}}"
-      },
-      {
-        "rolearn": aws_iam_role.github_oidc_auth_role.arn
-        "username": "github-oidc-auth-user"
+# resource "kubernetes_config_map" "aws-auth" {
+#   data = {
+#     "mapRoles" = yamlencode([
+#       {
+#         "groups": ["system:bootstrappers", "system:nodes"],
+#         "rolearn": data.terraform_remote_state.eks.outputs.eks_nodegroup_role_arn
+#         "username": "system:node:{{EC2PrivateDNSName}}"
+#       },
+#       {
+#         "rolearn": aws_iam_role.github_oidc_auth_role.arn
+#         "username": "github-oidc-auth-user"
         
-      }
-    ])
+#       }
+#     ])
 
-    "mapAccounts" = yamlencode([])
-    "mapUsers" = yamlencode([])
-  }
+#     "mapAccounts" = yamlencode([])
+#     "mapUsers" = yamlencode([])
+#   }
 
-  metadata {
-    name      = "aws-auth"
-    namespace = "kube-system"
-    labels = {
-      "app.kubernetes.io/managed-by" = "Terraform"
-      "terraform.io/module"          = "terraform-aws-modules.eks.aws"
-    }
-  }
+#   metadata {
+#     name      = "aws-auth"
+#     namespace = "kube-system"
+#     labels = {
+#       "app.kubernetes.io/managed-by" = "Terraform"
+#       "terraform.io/module"          = "terraform-aws-modules.eks.aws"
+#     }
+#   }
+# }
+
+output "github_oidc_auth_role_arn" {
+  value = aws_iam_role.github_oidc_auth_role.arn
 }
+
+output "eks_nodegroup_role_arn" {
+  value = data.terraform_remote_state.eks.outputs.eks_nodegroup_role_arn
+}
+
+output  "github-oidc-auth-user"{
+
+  value = "github-oidc-auth-user"
+}
+
+
+# apiVersion: v1
+# data:
+#   mapRoles: |
+#     - groups:
+#       - system:bootstrappers
+#       - system:nodes
+#       rolearn: arn:aws:iam::xxxxxxxxx:role/hr-dev-eks-nodegroup-role
+#       username: system:node:{{EC2PrivateDNSName}}
+#     - rolearn: arn:aws:iam::xxxxxxxxxxxxx:role/github-oidc-auth-role
+#       username: github-oidc-auth-user
+# kind: ConfigMap
