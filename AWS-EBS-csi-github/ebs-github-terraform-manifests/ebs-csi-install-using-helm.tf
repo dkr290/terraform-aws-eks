@@ -2,7 +2,8 @@ resource "helm_release" "ebs_csi_driver" {
   name       = "${local.name}-aws-ebs-csi-driver"
 
   repository = "https://kubernetes-sigs.github.io/aws-ebs-csi-driver"
-  chart      = "aws-ebs-csi-driver"
+  #chart      = "aws-ebs-csi-driver"
+  chart    = "C:\\tools\\aws-ebs-csi-driver-2.11.1.tgz"
   namespace = "kube-system"
 
   set {
