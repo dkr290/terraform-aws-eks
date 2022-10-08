@@ -30,7 +30,6 @@ resource "kubernetes_cluster_role_binding" "github_oidc_cluster_role_binding" {
   }
 }
 
-
 # Uncomment to manage otherwise keep it commented out for destroy
 
 
