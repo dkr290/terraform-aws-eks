@@ -31,34 +31,32 @@ resource "kubernetes_cluster_role_binding" "github_oidc_cluster_role_binding" {
 }
 
 
-# resource "kubernetes_config_map" "aws-auth" {
-#   data = {
-#     "mapRoles" = yamlencode([
-#       {
-#         "groups": ["system:bootstrappers", "system:nodes"],
-#         "rolearn": data.terraform_remote_state.eks.outputs.eks_nodegroup_role_arn
-#         "username": "system:node:{{EC2PrivateDNSName}}"
-#       },
-#       {
-#         "rolearn": aws_iam_role.github_oidc_auth_role.arn
-#         "username": "github-oidc-auth-user"
+resource "kubernetes_config_map_v1_data" "aws-auth" {
+  data = {
+    "mapRoles" = yamlencode([
+      {
+        "groups": ["system:bootstrappers", "system:nodes"],
+        "rolearn": data.terraform_remote_state.eks.outputs.eks_nodegroup_role_arn
+        "username": "system:node:{{EC2PrivateDNSName}}"
+      },
+      {
+        "rolearn": aws_iam_role.github_oidc_auth_role.arn
+        "username": "github-oidc-auth-user"
         
-#       }
-#     ])
+      }
+    ])
 
-#     "mapAccounts" = yamlencode([])
-#     "mapUsers" = yamlencode([])
-#   }
+    "mapAccounts" = yamlencode([])
+    "mapUsers" = yamlencode([])
+  }
 
-#   metadata {
-#     name      = "aws-auth"
-#     namespace = "kube-system"
-#     labels = {
-#       "app.kubernetes.io/managed-by" = "Terraform"
-#       "terraform.io/module"          = "terraform-aws-modules.eks.aws"
-#     }
-#   }
-# }
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
+   
+  }
+  force=true
+}
 
 output "github_oidc_auth_role_arn" {
   value = aws_iam_role.github_oidc_auth_role.arn
