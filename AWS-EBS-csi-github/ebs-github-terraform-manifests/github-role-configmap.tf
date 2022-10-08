@@ -6,7 +6,7 @@ resource "kubernetes_cluster_role" "github_oidc_cluster_role" {
 
     rule {
         api_groups  = ["*"]
-        resources   = ["deployments","pods","services","namespaces","secrets","configmaps","persistentvolumeclaims"]
+        resources   = ["deployments","pods","services","namespaces","secrets","configmaps","storageclasses","persistentvolumeclaims"]
         verbs       = ["get", "list", "watch", "create", "update", "patch", "delete"]
     }
 }
