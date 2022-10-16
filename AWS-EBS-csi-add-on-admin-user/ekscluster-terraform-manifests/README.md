@@ -120,3 +120,105 @@ kubectl -n kube-system edit configmap aws-auth
       username: admin
       groups:
         - system:masters
+
+#####  CREATE A BASIC USER WITHOUT aws ADMIN TO BE ONLY EKS ADMIN
+
+# Get current user configured in AWS CLI
+aws sts get-caller-identity
+Observation: Should see the user "your username" from "default" profile
+
+# Create IAM User
+aws iam create-user --user-name eksadmin2
+
+# Set password for eksadmin1 user
+aws iam create-login-profile --user-name eksadmin2 --password <password here> --no-password-reset-required
+
+# Create Security Credentials for IAM User and make a note of them
+aws iam create-access-key --user-name eksadmin2
+
+# Make a note of Access Key ID and Secret Access Key
+User: eksadmin2
+{
+    "AccessKey": {
+        "UserName": "eksadmin2",
+        "AccessKeyId": "xxxxxxxxxxxxxx",
+        "Status": "Active",
+        "SecretAccessKey": "xxxxxxxxxxxxxxxxx",
+        "CreateDate": "xxxxxxxxxxxxxxxxxxx"
+    }
+}
+ - We already know from previous demo that aws-auth should be configured with user details to work via kubectl.
+ - So we will test kubectl access after updating the eks configmap aws-auth
+
+aws sts get-caller-identity
+Observation:
+1. We can update aws-auth configmap using "eksadmin2" user or cluster creator user <some user>
+
+# Get IAM User and make a note of arn
+aws iam get-user --user-name eksadmin2
+
+# To edit configmap
+kubectl -n kube-system edit configmap aws-auth
+
+## mapUsers TEMPLATE (Add this under "data")
+  mapUsers: |
+    - userarn: <REPLACE WITH USER ARN>
+      username: admin
+      groups:
+        - system:masters
+
+## mapUsers TEMPLATE - Replaced with IAM User ARN
+  mapUsers: |
+    - userarn: xxxxxxxxxxxxxxxxxxxx
+      username: eksadmin1
+      groups:
+        - system:masters     
+    - userarn: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      username: eksadmin2
+      groups:
+        - system:masters              
+
+# Verify Nodes if they are ready (only if any errors occured during update)
+kubectl get nodes --watch
+
+# Verify aws-auth config map after making changes
+kubectl -n kube-system get configmap aws-auth -o yaml
+
+# To list all configuration data
+aws configure list
+
+# To list all your profile names
+aws configure list-profiles
+
+# Configure aws cli eksadmin1 Profile 
+aws configure --profile eksadmin2
+
+# To list all your profile names
+aws configure list-profiles
+
+# Get current user configured in AWS CLI
+aws sts get-caller-identity
+
+
+# Configure kubeconfig for kubectl with AWS CLI Profile eksadmin2
+aws eks --region <region-code> update-kubeconfig --name <cluster_name> --profile <AWS-CLI-Profile-NAME>
+
+fail for eksadmin2
+
+# Get current user configured in AWS CLI
+aws sts get-caller-identity
+Observation: Should see the user <user account> (EKS_Cluster_Create_User) from default profile
+
+# Create IAM Policy
+cd iam-files
+aws iam create-policy --policy-name eks-full-access-policy --policy-document file://eks-full-access-policy.json
+
+
+
+# Attach Policy to eksadmin2 user (Update ACCOUNT-ID and Username)
+aws iam attach-user-policy --policy-arn <POLICY-ARN> --user-name <USER-NAME>
+aws iam attach-user-policy --policy-arn arn:aws:iam::xxxxxxxxxxxxxx:policy/eks-full-access-policy --user-name eksadmin2
+
+
+# Access EKS with the user eksadmin2 but through GUI console
+# kubectl with eksadmin2 context
