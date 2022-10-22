@@ -87,3 +87,14 @@ output "node_group_private_version" {
   description = "Private Node Group Kubernetes Version"
   value       = aws_eks_node_group.eks_ng_private.version
 }
+
+
+output "github_oidc_auth_role_arn" {
+  value = aws_iam_role.github_oidc_auth_role.arn
+}
+
+
+output  "github-oidc-auth-user"{
+
+  value = "github-oidc-auth-user"
+}

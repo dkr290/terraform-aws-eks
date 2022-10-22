@@ -222,3 +222,9 @@ aws iam attach-user-policy --policy-arn arn:aws:iam::xxxxxxxxxxxxxx:policy/eks-f
 
 # Access EKS with the user eksadmin2 but through GUI console
 # kubectl with eksadmin2 context
+
+
+Update depends_on Meta-Argument with configmap kubernetes_config_map_v1.aws_auth.
+When EKS Cluster is created, kubernetes object aws-auth configmap will not get created
+aws-auth configmap will be created when the first EKS Node Group gets created to update the EKS Nodes related role information in aws-auth configmap.
+So we will populate the equivalent aws-auth configmap before creating the EKS Node Group and also we will create EKS Node Group only after configMap aws-auth resource is created. This is to avoid bad errors with the configmap

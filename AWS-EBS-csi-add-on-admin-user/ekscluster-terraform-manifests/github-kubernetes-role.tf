@@ -63,18 +63,6 @@ resource "kubernetes_cluster_role_binding" "github_oidc_cluster_role_binding" {
 #     }
 # }
 
-output "github_oidc_auth_role_arn" {
-  value = aws_iam_role.github_oidc_auth_role.arn
-}
-
-output "eks_nodegroup_role_arn" {
-  value = data.terraform_remote_state.eks.outputs.eks_nodegroup_role_arn
-}
-
-output  "github-oidc-auth-user"{
-
-  value = "github-oidc-auth-user"
-}
 
 
 # apiVersion: v1
