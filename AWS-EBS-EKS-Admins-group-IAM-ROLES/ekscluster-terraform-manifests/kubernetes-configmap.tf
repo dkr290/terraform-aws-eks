@@ -20,21 +20,21 @@ locals {
     }    
 
   ]
-  configmap_user = [
-        {
-        userarn = "${aws_iam_user.admin_user.arn}"
-       username = "${aws_iam_user.admin_user.name}"
-        groups =["system:masters"]
-        },
-        {
-       userarn = "${aws_iam_user.basic_user.arn}"
-       username = "${aws_iam_user.basic_user.name}"
-       groups =["system:masters"]
-      }
+#   configmap_user = [
+#         {
+#         userarn = "${aws_iam_user.admin_user.arn}"
+#        username = "${aws_iam_user.admin_user.name}"
+#         groups =["system:masters"]
+#         },
+#         {
+#        userarn = "${aws_iam_user.basic_user.arn}"
+#        username = "${aws_iam_user.basic_user.name}"
+#        groups =["system:masters"]
+#       }
 
-  ]
+#   ]
 
-}
+ }
 
 resource "kubernetes_config_map_v1" "aws_auth" {
   metadata {
@@ -44,7 +44,7 @@ resource "kubernetes_config_map_v1" "aws_auth" {
 
   data = {
     mapRoles =yamlencode(local.configmap_roles)
-    mapUsers= yamlencode(local.configmap_user)
+    # mapUsers= yamlencode(local.configmap_user)
   }
 
   depends_on = [

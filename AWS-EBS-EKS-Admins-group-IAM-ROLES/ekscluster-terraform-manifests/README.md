@@ -42,7 +42,7 @@ echo POLICY=$POLICY
 
 # Create IAM Role
 aws iam create-role \
-  --role-name eks-admin-role \AWS 
+  --role-name eks-admin-role \
   --description "Kubernetes administrator role (for AWS IAM Authenticator for Kubernetes)." \
   --assume-role-policy-document "$POLICY" \
   --output text \
@@ -96,9 +96,6 @@ kubectl -n kube-system edit configmap aws-auth
 
 
  
-# Verify aws-auth configmap after making changes
-kubectl -n kube-system get configmap aws-auth -o yaml
-
 
 # sverification
 kubectl -n kube-system get configmap aws-auth -o yaml
@@ -151,3 +148,78 @@ aws eks --region <region-code> update-kubeconfig --name <cluster_name>
 aws eks --region eu-central-1 update-kubeconfig --name <name>
 # Fail An error occurred (AccessDeniedException) when calling the DescribeCluster operation: User: // does not have permissions it is just for EKS 
 
+# Export AWS Account ID
+ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+echo $ACCOUNT_ID
+
+
+# Assume IAM Role
+aws sts assume-role --role-arn "arn:aws:iam::<REPLACE-YOUR-ACCOUNT-ID>:role/eks-admin-role" --role-session-name eksadminsession01
+aws sts assume-role --role-arn "arn:aws:iam::$ACCOUNT_ID:role/eks-admin-role" --role-session-name eksadminsession101
+
+
+# GET Values and replace here
+export AWS_ACCESS_KEY_ID=RoleAccessKeyID
+export AWS_SECRET_ACCESS_KEY=RoleSecretAccessKey
+export AWS_SESSION_TOKEN=RoleSessionToken
+
+# Verify current user configured in aws cli
+aws sts get-caller-identity
+
+# Clean-Up kubeconfig
+>$HOME/.kube/config
+cat $HOME/.kube/config
+
+# Configure kubeconfig for kubectl
+aws eks --region <region-code> update-kubeconfig --name <cluster_name>
+
+
+# Describe Cluster
+aws eks --region <region> describe-cluster --name <cluster> --query cluster.status
+
+# List Kubernetes Nodes
+kubectl get nodes
+kubectl get pods -n kube-system
+
+
+# To return to the IAM user, remove the environment variables:
+unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+
+# Verify current user configured in aws cli
+aws sts get-caller-identity
+It should switch back to current AWS_DEFAULT_PROFILE eksadmin1
+
+## to clean
+# Get current user configured in AWS CLI
+aws sts get-caller-identity
+
+
+# Set default profile
+export AWS_DEFAULT_PROFILE=default
+
+# Get current user configured in AWS CLI
+aws sts get-caller-identity
+
+# Delete IAM Role Policy and IAM Role 
+aws iam delete-role-policy --role-name eks-admin-role --policy-name eks-full-access-policy
+aws iam delete-role --role-name eks-admin-role
+
+# Remove IAM User from IAM Group
+aws iam remove-user-from-group --user-name eksuser01 --group-name eksadmins
+
+# Delete IAM User Login profile
+aws iam delete-login-profile --user-name eksuser01
+
+# Delete IAM Access Keys
+aws iam list-access-keys --user-name eksuser01
+aws iam delete-access-key --access-key-id <REPLACE AccessKeyId> --user-name eksuser01
+
+
+# Delete IAM user
+aws iam delete-user --user-name eksuser01
+
+# Delete IAM Group Policy
+aws iam delete-group-policy --group-name eksadmins --policy-name eksadmins-group-policy
+
+# Delete IAM Group
+aws iam delete-group --group-name eksadmins
