@@ -1,3 +1,5 @@
+## Manual sterps are described here 
+
 1. Create EKS Cluster bu executing the terraform
 a. EKs
 b. Public node Group
@@ -15,174 +17,107 @@ kubectl get nodes -o wide
 kubectl get svc
 
 
-## Connect to Bastion host and then to worker nodes
-
-ssh -i private-key/theprivatekey.pem ec2-user@Bastion-Host-public-ip-address
-its possible for the public node group to use public ip for the worker node
-
-ssh /tmp/key.pem ec2-user@Private_nodegroup_private_ip
-
-# verify kubelet and kube proxy are running
-ps -ef | grep kube
-# verify kubelet-config.json
-cat /etc/kubernetes/kubelet/kubelet-config.json
-# verify kubelet kubeconfig
-cat /var/lib/kubelet/kubeconfig
-
-wget <EKS CLusteAPI endpoint> to verify especially for the private workers can go through nat gateway and connect
-
-# EKS OpenID Connect Well Known Configuration URL
-<EKS OpenID Connect provider URL>/.well-known/openid-configuration
-
-
-
-### create the adminuser
 aws sts get-caller-identity
-# Create IAM User
-aws iam create-user --user-name eksadmin1
+# Configure kubeconfig for kubectl
+aws eks --region <region-code> update-kubeconfig --name <cluster_name>
+aws eks --region eu-central-1  update-kubeconfig --name <name>
 
-# Attach AdministratorAccess Policy to User
-aws iam attach-user-policy --policy-arn arn:aws:iam::aws:policy/AdministratorAccess --user-name eksadmin1
-
-# Set password for eksadmin1 user
-aws iam create-login-profile --user-name eksadmin1 --password xxxxxxxx --no-password-reset-required
-
-# Create Security Credentials for IAM User and make a note of them
-aws iam create-access-key --user-name eksadmin1
-
-# Make a note of Access Key ID and Secret Access Key
-User: eksadmin1
-{
-    "AccessKey": {
-        "UserName": "eksadmin1",
-        "AccessKeyId": "xxxxxxx",
-        "Status": "Active",
-        "SecretAccessKey": "xxxxxxxxxx",
-        "CreateDate": "xxxxxxx"
-    }
-}
-
-
-# To list all configuration data
-aws configure list
-
-# To list all your profile names
-aws configure list-profiles
-
-# Configure aws cli eksadmin1 Profile 
-aws configure --profile eksadmin1
-
-
-# Get current user configured in AWS CLI
-aws sts get-caller-identity
-
-# Configure kubeconfig for eksadmin1 AWS CLI profile
-aws eks --region eu-central-1 update-kubeconfig --name <eks-cluster> --profile eksadmin1
-
-
-# Verify kubeconfig file
-cat $HOME/.kube/config
-      env:
-      - name: AWS_PROFILE
-        value: eksadmin1
-Observation: At the end of kubeconfig file we find that AWS_PROFILE it is using is "eksadmin1" profile   
-
-# Verify Kubernetes Nodes
+# Verify Kubernetes Worker Nodes using kubectl
 kubectl get nodes
-Observation: 
-1. We should fail in accessing the EKS Cluster resources using kubectl
-
-# to switch the profiles
+kubectl get nodes -o wide
 
 
-aws eks --region eu-central-1 update-kubeconfig --name <eks cluster> --profile default
+# Export AWS account ID
+ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+echo $ACCOUNT_ID
 
-# Verify kubeconfig file
-cat $HOME/.kube/config
-      env:
-      - name: AWS_PROFILE
-        value: default
+# IAM Trust Policy 
+POLICY=$(echo -n '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::'; echo -n "$ACCOUNT_ID"; echo -n ':root"},"Action":"sts:AssumeRole","Condition":{}}]}')
 
-# Verify aws-auth config map before making changes
+
+
+# Verify both values
+echo ACCOUNT_ID=$ACCOUNT_ID
+echo POLICY=$POLICY
+
+# Create IAM Role
+aws iam create-role \
+  --role-name eks-admin-role \AWS 
+  --description "Kubernetes administrator role (for AWS IAM Authenticator for Kubernetes)." \
+  --assume-role-policy-document "$POLICY" \
+  --output text \
+  --query 'Role.Arn'
+
+  # Create IAM Policy - EKS Full access
+cd iam-files
+aws iam put-role-policy --role-name eks-admin-role --policy-name eks-full-access-policy --policy-document file://eks-full-access-policy.json
+
+
+# Create IAM User Groups
+aws iam create-group --group-name eksadmins
+
+# Verify AWS ACCOUNT_ID is set
+echo $ACCOUNT_ID
+
+# IAM Group Policy
+ADMIN_GROUP_POLICY=$(echo -n '{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowAssumeOrganizationAccountRole",
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::'; echo -n "$ACCOUNT_ID"; echo -n ':role/eks-admin-role"
+    }
+  ]
+}')
+
+
+# Verify Policy (if AWS Account Id replaced in policy)
+echo $ADMIN_GROUP_POLICY
+
+# Create Policy
+aws iam put-group-policy \
+--group-name eksadmins \
+--policy-name eksadmins-group-policy \
+--policy-document "$ADMIN_GROUP_POLICY"
+
+# Verify aws-auth configmap
 kubectl -n kube-system get configmap aws-auth -o yaml
 
-
-# Get IAM User and make a note of arn
-aws iam get-user --user-name eksadmin1
-
-
-# To edit configmap
-kubectl -n kube-system edit configmap aws-auth 
-
-## mapUsers TEMPLATE (Add this under "data")
-  mapUsers: |
-    - userarn: <REPLACE WITH USER ARN>
-      username: admin
-      groups:
-        - system:masters
-
-#####  CREATE A BASIC USER WITHOUT aws ADMIN TO BE ONLY EKS ADMIN
-
-# Get current user configured in AWS CLI
-aws sts get-caller-identity
-Observation: Should see the user "your username" from "default" profile
-
-# Create IAM User
-aws iam create-user --user-name eksadmin2
-
-# Set password for eksadmin1 user
-aws iam create-login-profile --user-name eksadmin2 --password <password here> --no-password-reset-required
-
-# Create Security Credentials for IAM User and make a note of them
-aws iam create-access-key --user-name eksadmin2
-
-# Make a note of Access Key ID and Secret Access Key
-User: eksadmin2
-{
-    "AccessKey": {
-        "UserName": "eksadmin2",
-        "AccessKeyId": "xxxxxxxxxxxxxx",
-        "Status": "Active",
-        "SecretAccessKey": "xxxxxxxxxxxxxxxxx",
-        "CreateDate": "xxxxxxxxxxxxxxxxxxx"
-    }
-}
- - We already know from previous demo that aws-auth should be configured with user details to work via kubectl.
- - So we will test kubectl access after updating the eks configmap aws-auth
-
-aws sts get-caller-identity
-Observation:
-1. We can update aws-auth configmap using "eksadmin2" user or cluster creator user <some user>
-
-# Get IAM User and make a note of arn
-aws iam get-user --user-name eksadmin2
-
-# To edit configmap
+# Edit aws-auth configmap
 kubectl -n kube-system edit configmap aws-auth
 
-## mapUsers TEMPLATE (Add this under "data")
-  mapUsers: |
-    - userarn: <REPLACE WITH USER ARN>
-      username: admin
+# Replace ACCOUNT_ID and EKS-ADMIN-ROLE
+    - rolearn: arn:aws:iam::<ACCOUNT_ID>:role/<EKS-ADMIN-ROLE>
+      username: eks-admin
       groups:
         - system:masters
 
-## mapUsers TEMPLATE - Replaced with IAM User ARN
-  mapUsers: |
-    - userarn: xxxxxxxxxxxxxxxxxxxx
-      username: eksadmin1
-      groups:
-        - system:masters     
-    - userarn: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-      username: eksadmin2
-      groups:
-        - system:masters              
 
-# Verify Nodes if they are ready (only if any errors occured during update)
-kubectl get nodes --watch
-
-# Verify aws-auth config map after making changes
+ 
+# Verify aws-auth configmap after making changes
 kubectl -n kube-system get configmap aws-auth -o yaml
+
+
+# sverification
+kubectl -n kube-system get configmap aws-auth -o yaml
+
+# Create IAM User
+aws iam create-user --user-name eksuser01
+
+# add user to the group
+# Associate IAM User to IAM Group  eksadmins
+aws iam add-user-to-group --group-name <GROUP> --user-name <USER>
+aws iam add-user-to-group --group-name eksadmins --user-name eksuser01
+
+# Set password for user
+aws iam create-login-profile --user-name eksuser01 --password <some password> --no-password-reset-required
+
+
+# Create Security Credentials for IAM User and make a note of them
+aws iam create-access-key --user-name eksuser01
+
 
 # To list all configuration data
 aws configure list
@@ -191,40 +126,28 @@ aws configure list
 aws configure list-profiles
 
 # Configure aws cli eksadmin1 Profile 
-aws configure --profile eksadmin2
+aws configure --profile eksuser01
+AWS Access Key ID:
+AWS Secret Access Key:
+Default region: 
+Default output format: json
 
-# To list all your profile names
-aws configure list-profiles
+# Get current user configured in AWS CLI
+aws sts get-caller-identity
+
+# Set default profile
+export AWS_DEFAULT_PROFILE=eksuser01
 
 # Get current user configured in AWS CLI
 aws sts get-caller-identity
 
+# Clean-Up kubeconfig
+rm -rf  ~/.kube/config
+$HOME/.kube/config
+cat $HOME/.kube/config
 
-# Configure kubeconfig for kubectl with AWS CLI Profile eksadmin2
-aws eks --region <region-code> update-kubeconfig --name <cluster_name> --profile <AWS-CLI-Profile-NAME>
+# Configure kubeconfig for kubectl
+aws eks --region <region-code> update-kubeconfig --name <cluster_name>
+aws eks --region eu-central-1 update-kubeconfig --name <name>
+# Fail An error occurred (AccessDeniedException) when calling the DescribeCluster operation: User: // does not have permissions it is just for EKS 
 
-fail for eksadmin2
-
-# Get current user configured in AWS CLI
-aws sts get-caller-identity
-Observation: Should see the user <user account> (EKS_Cluster_Create_User) from default profile
-
-# Create IAM Policy
-cd iam-files
-aws iam create-policy --policy-name eks-full-access-policy --policy-document file://eks-full-access-policy.json
-
-
-
-# Attach Policy to eksadmin2 user (Update ACCOUNT-ID and Username)
-aws iam attach-user-policy --policy-arn <POLICY-ARN> --user-name <USER-NAME>
-aws iam attach-user-policy --policy-arn arn:aws:iam::xxxxxxxxxxxxxx:policy/eks-full-access-policy --user-name eksadmin2
-
-
-# Access EKS with the user eksadmin2 but through GUI console
-# kubectl with eksadmin2 context
-
-
-Update depends_on Meta-Argument with configmap kubernetes_config_map_v1.aws_auth.
-When EKS Cluster is created, kubernetes object aws-auth configmap will not get created
-aws-auth configmap will be created when the first EKS Node Group gets created to update the EKS Nodes related role information in aws-auth configmap.
-So we will populate the equivalent aws-auth configmap before creating the EKS Node Group and also we will create EKS Node Group only after configMap aws-auth resource is created. This is to avoid bad errors with the configmap

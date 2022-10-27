@@ -14,8 +14,8 @@ locals {
 
     },
      {
-     rolearn: "${aws_iam_role.github_oidc_auth_role.arn}"
-     username: "github-oidc-auth-user"
+     rolearn  = "${aws_iam_role.github_oidc_auth_role.arn}"
+     username = "github-oidc-auth-user"
         
     }    
 
